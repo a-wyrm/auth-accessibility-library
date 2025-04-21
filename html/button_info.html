@@ -1,0 +1,79 @@
+<div class="container">
+    <h2 class="header-title">Element Insights</h2>
+    <div class="dropdown-container">
+        <div class="menu-container">
+            <ul class="insights-list" id="insightsList">
+                <!-- Buttons will be dynamically added here -->
+            </ul>
+        </div>
+    </div>
+    <hr class="divider">
+    <ul class="output-list" id="outputList">
+    </ul>
+</div>
+
+<script>
+    const insights = [
+        { name: "Insight 1", func: "function1" },
+        { name: "Insight 2", func: "function2" },
+    ];
+
+    const output = [
+        { text: "Sample Text 1", attributes: { attr1: "value1", attr2: "value2" }, hidden: false, html: "<div>Sample HTML 1</div>", selector: ".sample1" },
+        { text: "Sample Text 2", attributes: { attr1: "value3", attr2: "value4" }, hidden: true, html: "<div>Sample HTML 2</div>", selector: ".sample2" },
+    ];
+
+    let showingHidden = false;
+
+    // Populate insights list
+    const insightsList = document.getElementById("insightsList");
+    insights.forEach((insight, index) => {
+        const button = document.createElement("button");
+        button.className = "insight-button";
+        button.textContent = insight.name;
+        button.addEventListener("click", () => fetchComponent(insight.func));
+        insightsList.appendChild(button);
+    });
+
+    // Populate output list
+    const outputList = document.getElementById("outputList");
+    function toggleOutputList() {
+        outputList.innerHTML = ""; // Clear existing items
+        output.forEach((item, index) => {
+            if (showingHidden || !item.hidden) {
+                const listItem = document.createElement("li");
+                listItem.className = "output-item";
+
+                listItem.innerHTML = `
+                    <div class="output-header">
+                        <span class="output-index">${index + 1} of ${output.length}</span>
+                    </div>
+                    <div class="output-details">
+                        ${item.text ? `<div class="output-text"><span class="label">Text:</span> <span>${item.text}</span></div>` : ""}
+                        ${Object.entries(item.attributes).map(([name, value]) => `
+                            <div class="output-attribute"><span class="label">${name}:</span> <span>${value}</span></div>
+                        `).join("")}
+                        ${item.hidden ? `<div class="output-hidden"><span class="label">Hidden:</span> <span>Yes</span></div>` : ""}
+                        <div class="output-html"><span class="label">HTML:</span> <textarea readonly>${item.html}</textarea></div>
+                    </div>
+                    <div class="output-actions">
+                        <button class="highlight-button" data-selector="${item.selector}">Highlight</button>
+                    </div>
+                `;
+
+                listItem.querySelector("button").addEventListener("click", () => highLightComponent(item.selector));
+                outputList.appendChild(listItem);
+            }
+        });
+    }
+
+    toggleOutputList();
+
+    function fetchComponent(func) {
+        console.log(`Fetching component for function: ${func}`);
+    }
+
+    function highLightComponent(selector) {
+        console.log(`Highlighting component with selector: ${selector}`);
+    }
+</script>
