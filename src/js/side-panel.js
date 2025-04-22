@@ -1,5 +1,4 @@
-import {highLightElement} from "../js/highlight.js";
-import {fetchElements} from "../js/get_element.js";
+import {highLightElement} from "./highlight.js";
 
 function highlightAllButtons() {
     console.log("Highlighting all buttons");
@@ -10,12 +9,18 @@ function highlightAllButtons() {
     });
 }
 
-function fetchButtons(){
-    const button_html = "button:not([role]), [role='button']";
-    const button_attrib = ["role", "aria-label", "aria-labelledby", "tabindex", "title", "aria-hidden", "aria-expanded"];
-
-    const button_elements = fetchElements(button_html, button_attrib);
-    console.log(button_elements);
+async function fetchButtons(){
+    return new Promise((resolve, reject) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+            if (tabs[0] && tabs[0].id) {
+                const response = await chrome.tabs.sendMessage(tabs[0].id, { action: "fetchButtons" });
+                resolve(response);
+            } 
+            else {
+                resolve(undefined);
+            }
+        });
+    });
 }
 
 function refreshPage() {
@@ -46,4 +51,8 @@ window.onload = loadContent;
 window.onhashchange = loadContent;
 document.getElementById("refresh_button").addEventListener("click", refreshPage);
 document.getElementById("hightlight_button").addEventListener("click", highlightAllButtons);
-document.getElementById("fetch_element").addEventListener("click", fetchButtons);
+
+document.getElementById("fetch_element").addEventListener("click", async () => {
+    const buttons = await fetchButtons();
+    console.log(buttons.webpageButtons);
+});
