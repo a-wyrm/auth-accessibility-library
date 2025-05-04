@@ -1,5 +1,4 @@
 /*global chrome*/
-//import {highLightElement} from "./js helpers/highlight.js";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -36,7 +35,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 function getAxe(message, sendResponse) {
     return __awaiter(this, void 0, void 0, function () {
         var error_1;
@@ -69,32 +67,38 @@ function getAxe(message, sendResponse) {
         });
     });
 }
-function highlightFields(element_list) {
-    return __awaiter(this, void 0, void 0, function () {
-        var tempHighlights, targetElement;
-        return __generator(this, function (_a) {
-            tempHighlights = document.querySelectorAll("body .tsc-rectangle-temp-ha, body .tsc-dimensions-temp-ha, body .tsc-circle-temp-ha");
-            tempHighlights.forEach(function (el) { return el.remove(); });
-            targetElement = document.querySelector(element_list.selector);
-            if (!targetElement) {
-                return [2 /*return*/];
-            }
-            //const [highlightElement, textElement] = highLightElement(targetElement);
-            targetElement.scrollIntoView({
-                behavior: "smooth",
-                block: "center",
-            });
-            if (element_list.showText) {
-                //textElement.textContent = element_list.showText;
-            }
-            else {
-                //textElement.textContent = "^";
-            }
-            return [2 /*return*/];
-        });
+/* async function highlightFields(element_list){
+
+    const tempHighlights = document.querySelectorAll("body .tsc-rectangle-temp-ha, body .tsc-dimensions-temp-ha, body .tsc-circle-temp-ha");
+    tempHighlights.forEach((el) => el.remove());
+  
+    const targetElement = document.querySelector(element_list.selector);
+    if (!targetElement) {
+      return;
+    }
+  
+    //const [highlightElement, textElement] = highLightElement(targetElement);
+  
+    targetElement.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
     });
+  
+    if (element_list.showText) {
+      //textElement.textContent = element_list.showText;
+    }
+    else {
+      //textElement.textContent = "^";
+    }
+  
+    //document.body.appendChild(highlightElement);
+    //document.body.appendChild(textElement);
+
+    // get properties of highlighted elements
+    //fetchElements(tempHighlights, []);
 }
-chrome.runtime.onMessage.addListener(function (message, sendResponse) {
+
+chrome.runtime.onMessage.addListener(function(message, sendResponse) {
     switch (message.command) {
         case "highlight":
             highlightFields(message.elements);
@@ -106,29 +110,27 @@ chrome.runtime.onMessage.addListener(function (message, sendResponse) {
             //a(window.location.href);
             break;
         case "fetch button":
-            var button_html = "button:not([role]), [role='button']";
-            var button_attrib = ["role", "aria-label", "aria-labelledby", "tabindex", "title", "aria-hidden", "aria-expanded"];
+            const button_html = "button:not([role]), [role='button']";
+            const button_attrib = ["role", "aria-label", "aria-labelledby", "tabindex", "title", "aria-hidden", "aria-expanded"];
             //var returned_elements = fetchElements(button_html, button_attrib)
             //console.log(returned_elements)
             break;
         case "fetch link":
-            var link_html = "a:not([role]),[role='link']";
-            var link_attrib = ["role", "aria-label", "tabindex", "title", "aria-hidden"];
+            const link_html = "a:not([role]),[role='link']";
+            const link_attrib = ["role", "aria-label", "tabindex", "title", "aria-hidden"];
             //fetchElements(link_html, link_attrib);
             break;
         case "fetch image":
-            var imgs = "img, [role='img']";
-            var img_attributes = ["alt", "title", "aria-label", "aria-labelledby", "role", "aria-hidden"];
+            const imgs = "img, [role='img']";
+            const img_attributes = ["alt", "title", "aria-label", "aria-labelledby", "role", "aria-hidden"];
             //fetchElements(imgs, img_attributes)
             break;
     }
 });
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) { return __awaiter(_this, void 0, void 0, function () {
-    return __generator(this, function (_a) {
-        chrome.storage.local.set({
-            activeId: tabId
-        });
-        return [2 /*return*/];
+
+chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+    chrome.storage.local.set({
+        activeId: tabId
     });
-}); });
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(function (error) { return console.error(error); });
+});
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error(error)) */ 

@@ -49,9 +49,10 @@ function loadContent() {
 
 window.onload = loadContent;
 window.onhashchange = loadContent;
+
+
 document.getElementById("refresh_button").addEventListener("click", refreshPage);
 document.getElementById("hightlight_button").addEventListener("click", highlightAllButtons);
-
 document.getElementById("fetch_element").addEventListener("click", async () => {
     const buttons = await fetchButtons();
     console.log(buttons.webpageButtons);

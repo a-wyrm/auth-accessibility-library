@@ -1,5 +1,4 @@
 /*global chrome*/
-//import {highLightElement} from "./js helpers/highlight.js";
 
 
 async function getAxe(message, sendResponse) {
@@ -25,7 +24,7 @@ async function getAxe(message, sendResponse) {
     return true;
 }
 
-async function highlightFields(element_list){
+/* async function highlightFields(element_list){
 
     const tempHighlights = document.querySelectorAll("body .tsc-rectangle-temp-ha, body .tsc-dimensions-temp-ha, body .tsc-circle-temp-ha");
     tempHighlights.forEach((el) => el.remove());
@@ -91,4 +90,4 @@ chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.
         activeId: tabId
     });
 });
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error(error))
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error(error)) */
