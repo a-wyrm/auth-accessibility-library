@@ -23,3 +23,5 @@ async function getAxe(message, sendResponse) {
     }
     return true;
 }
+
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error(error));

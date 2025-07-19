@@ -18,6 +18,7 @@ function apply_style(element, styles) {
   }
   return element;
 }
+
 function createHighlight(element_rectangle, size_limit) {
 
     var highlight_rec = document.createElement('div');
@@ -59,8 +60,17 @@ function createHighlight(element_rectangle, size_limit) {
 export function highLightElement(element) {
 
   document.body.style.setProperty("position", "relative", "important");
-  var elementRect = element.getBoundingClientRect();
-  var bodyRect = document.body.getBoundingClientRect();
+  
+  let elementRect, bodyRect;
+  try {
+    console.log(element);
+    elementRect = element.getBoundingClientRect();
+    bodyRect = document.body.getBoundingClientRect();
+  } 
+  catch (err) {
+    console.error("Error getting bounding rect for element:", err);
+    return [];
+  }
 
   const rectangle = {
     left: Math.max(elementRect.left - bodyRect.left, 0),
