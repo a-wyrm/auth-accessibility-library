@@ -1,0 +1,25 @@
+[package]
+name = "reactix"
+version = "2022.10.22"
+edition = "2021"
+
+[dependencies]
+actix-files = "0.6.2"
+actix-governor = { version = "0.3.2", features = ["log"] }
+actix-identity = "0.5.2"
+actix-multipart-extract = "0.1.5"
+actix-session = { version = "0.7.2", features = ["cookie-session"] }
+actix-web = { version = "4.2.1", features = ["rustls"] }
+anyhow = "1.0.65"
+chrono = { version = "0.4.22", features = ["serde"] }
+clap = { version = "4.0.15", features = ["cargo"] }
+dotenvy = "0.15.5"
+envy = "0.4.2"
+fern = "0.6.1"
+log = "0.4.17"
+serde = { version = "1.0.145", features = ["derive"] }
+sqlx = { version = "0.6.2", features = ["postgres", "runtime-tokio-rustls"] }
+thiserror = "1.0.37"
+
+[build-dependencies]
+dotenvy = "0.15.5"

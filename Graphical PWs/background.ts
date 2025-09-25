@@ -1,1 +1,0 @@
-// https://thewebdev.info/2022/02/04/how-to-get-an-html-element-in-which-a-mouse-click-occurred-with-javascript/
