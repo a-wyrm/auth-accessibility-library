@@ -1,74 +1,90 @@
-# Reactix
+# Auth Accessibility Library
 
-![version](https://img.shields.io/github/v/release/erayerdin/reactix?label=version&style=flat-square)
-![license](https://img.shields.io/badge/license-WTFPL-green?style=flat-square)
+Acessibility-focused authentication demo with an ASL passphrases.
 
-A Rust Actix template using React and Actix.
+This project includes:
 
-## Features
+- `app`: Rust + Actix backend (enrollment/login APIs)
+- `frontend`: React UI for signup/login sequence selection
+- `mongodb`: credential and lexicon storage
 
- - React with Typescript
- - Error management with [anyhow][anyhow_crate] and [thiserror][thiserror_crate]
- - Embedded migrations, pooling and database management with [sqlx][sqlx_crate]
- - Configuration management with [envy][envy_crate] and [dotenvy][dotenvy_crate].
- - Logging implementation with [log][log_crate] and [fern][fern_crate].
- - Actix features
-    - Rate limiting and throttling with [governor][governor_crate].
-    - Cookie, session and identity management with [actix-session][actix-session_crate] and [actix-identity][actix-identity_crate]
-    - Form management with [actix-multipart-extract][actix-multipart-extract_crate].
- - VSCode Stuff
-   - [Recommended Extensions](.vscode/extensions.json) will notify you to install when first launched.
-   - [Settings](.vscode/settings.json) will hide cluttering files and directories from file dock, add license header to every file when first created etc.
-   - [Tasks](.vscode/tasks.json), with which you can watch file change and recompile the project on save
+## Core ASL Flow
 
-[anyhow_crate]: https://crates.io/crates/anyhow
-[thiserror_crate]: https://crates.io/crates/thiserror
-[sqlx_crate]: https://crates.io/crates/sqlx
-[envy_crate]: https://crates.io/crates/envy
-[dotenvy_crate]: https://crates.io/crates/dotenvy
-[log_crate]: https://crates.io/crates/log
-[fern_crate]: https://crates.io/crates/fern
-[governor_crate]: https://crates.io/crates/governor
-[actix-session_crate]: https://crates.io/crates/actix-session
-[actix-identity_crate]: https://crates.io/crates/actix-identity
-[actix-multipart-extract_crate]: https://crates.io/crates/actix-multipart-extract
+- Signup: user selects exactly 5 ASL items in order.
+- Login: user replays the same 5-item sequence in the exact same order.
 
-## Requirements
+## Tech Stack
 
- - NPM/NodeJS
- - [SQLx CLI](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md#with-rust-toolchain)
- - [Cargo Watch](https://github.com/watchexec/cargo-watch#install)
+- Rust + Actix Web
+- MongoDB
+- React + TypeScript (Create React App)
+- Docker Compose
 
-## Initial Configuration
+## Run With Docker
 
-`xdg-open` command below launches the given file/directory with its default application. For example, the default app for a plain text or source code file might be Gedit in Gnome or Kwrite in KDE Plasma environment. Or you can explicitly define the editor you'd like to use.
+From repository root:
 
-``` bash
-# clone this repo
-git clone https://github.com/erayerdin/reactix
-
-# configure or review vscode settings and tasks for your needs
-xdg-open .vscode/extensions.json
-xdg-open .vscode/tasks.json
-
-# edit license and readme on your needs
-xdg-open LICENSE
-xdg-open README.md
-
-# edit cargo metadata
-xdg-open Cargo.toml
-
-# configure env files
-mv .example.env .env
-mv .example.build.env .build.env
-xdg-open .env
-xdg-open .build.env
+```bash
+docker compose up -d
 ```
 
-From here on, there are some things you might prefer to do with VSCode.
+Endpoints:
 
-If you have installed [Todo Tree](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.todo-tree) extension, which is prompted to be installed at the first launch due to [recommended extensions file](.vscode/extensions.json), you probably need to check its panel in VSCode (the icon on the left with a tree and a tick mark in it). It will guide you to what needs to be changed in order to get this template working.
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8080`
+- MongoDB: `mongodb://localhost:27020`
 
-# License
+Stop services:
 
-The source code here is licensed under [Do What the Fuck You Want to Public License](http://www.wtfpl.net/).
+```bash
+docker compose down
+```
+
+## Environment Variables
+
+The backend loads values from `.env` (mounted into `/app/.env` in Docker). See base.env for a base env file.
+
+Minimum required variable:
+
+- `WEBAPP_SESSION_SECRET_KEY` (must be at least 32 characters)
+
+Common variables:
+
+- `WEBAPP_HOST` (default `0.0.0.0`)
+- `WEBAPP_PORT` (default `8080`)
+- `WEBAPP_MONGO_URL`
+- `WEBAPP_MONGO_DATABASE`
+- `WEBAPP_ASL_REQUIRED_SELECTION_SIZE` (default `5`)
+
+In Docker Compose, backend Mongo URL is set to `mongodb://mongodb:27017` for container-to-container networking.
+
+## API Endpoints
+
+- `POST /api/auth/asl/enroll/start`
+- `POST /api/auth/asl/enroll/finish`
+- `POST /api/auth/asl/login/start`
+- `POST /api/auth/asl/login/verify`
+
+## Frontend Notes
+
+- The frontend uses a dev-server proxy for `/api` requests.
+- Sequence order is shown in the UI (`Step 1`, `Step 2`, etc.) to reduce login mismatch errors.
+- If login fails, verify both:
+   - User ID matches the enrolled user.
+   - Item order matches signup exactly.
+
+## Local Development (Without Docker)
+
+Backend:
+
+```bash
+cargo run -- --env-file .env
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm start
+```

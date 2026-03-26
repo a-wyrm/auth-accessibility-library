@@ -1,38 +1,230 @@
+:root {
+  --ink: #17202d;
+  --paper: #f7f7f2;
+  --accent: #087f8c;
+  --accent-strong: #025f69;
+  --sun: #f4b942;
+  --danger: #8e2f2f;
+  --panel-shadow: 0 12px 30px rgba(17, 24, 39, 0.18);
+}
+
 .App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
   min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 15%, rgba(244, 185, 66, 0.28), transparent 30%),
+    radial-gradient(circle at 90% 85%, rgba(8, 127, 140, 0.22), transparent 34%),
+    linear-gradient(165deg, #f7f7f2 0%, #f2f8fa 55%, #eff4e8 100%);
+  padding: 2rem 1rem 3rem;
+}
+
+.hero {
+  max-width: 980px;
+  margin: 0 auto 1.5rem;
+  text-align: left;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.hero h1 {
+  margin: 0.4rem 0;
+  font-size: clamp(1.85rem, 2.8vw, 3rem);
+  line-height: 1.1;
+}
+
+.hero-subtitle {
+  margin: 0;
+  max-width: 65ch;
+  font-size: 1rem;
+  color: #2b3444;
+}
+
+.auth-shell {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.mode-button {
+  border: 1px solid rgba(2, 95, 105, 0.35);
+  background: rgba(255, 255, 255, 0.76);
+  color: #0f2932;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+}
+
+.mode-button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.panel {
+  margin-top: 0.9rem;
+  padding: 1.2rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--panel-shadow);
+  border: 1px solid rgba(8, 127, 140, 0.18);
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.panel-header p {
+  margin: 0.5rem 0 0;
+}
+
+.selection-counter {
+  font-weight: 700;
+  color: #114e56;
+}
+
+.identity-row {
+  margin-top: 0.8rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 0.4rem;
+  font-weight: 700;
 }
 
-.App-link {
-  color: #61dafb;
+.identity-input {
+  border: 1px solid #c3d2d7;
+  border-radius: 10px;
+  padding: 0.62rem 0.7rem;
+  font-size: 0.95rem;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.identity-input:focus-visible {
+  outline: 3px solid var(--sun);
+  outline-offset: 1px;
+}
+
+.word-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.7rem;
+}
+
+.word-card {
+  border: 1px solid #c9d8dc;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.8rem;
+  text-align: left;
+  min-height: 86px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.word-card:hover {
+  border-color: #78aeb4;
+}
+
+.word-card:focus-visible,
+.mode-button:focus-visible,
+.action-button:focus-visible {
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
+}
+
+.word-card.selected {
+  border-color: var(--accent);
+  background: #eaf8fa;
+}
+
+.word-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.gesture-label {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.translation-label {
+  font-size: 0.84rem;
+  color: #405066;
+}
+
+.translation-label.hidden {
+  color: #6a717f;
+  font-style: italic;
+}
+
+.actions {
+  margin-top: 1rem;
+}
+
+.action-button {
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.1rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.action-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.enrollment-note {
+  margin-top: 0.8rem;
+  font-size: 0.92rem;
+}
+
+.status-message {
+  margin-top: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  border-left: 4px solid var(--accent);
+  background: #f2fbfc;
+  font-weight: 600;
+}
+
+.status-message.success {
+  border-left-color: #167f45;
+  background: #edfaf2;
+}
+
+.status-message.error {
+  border-left-color: var(--danger);
+  background: #fdeeee;
+}
+
+@media (max-width: 640px) {
+  .App {
+    padding: 1rem 0.7rem 1.5rem;
   }
-  to {
-    transform: rotate(360deg);
+
+  .panel {
+    padding: 1rem;
+  }
+
+  .word-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

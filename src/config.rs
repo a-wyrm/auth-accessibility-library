@@ -39,11 +39,22 @@ pub struct Config {
         deserialize_with = "Config::string_to_methods"
     )]
     pub throttle_methods: Vec<Method>,
-    #[serde(default = "Config::default_db_pool_min_connections")]
-    pub db_pool_min_connections: u32,
-    #[serde(default = "Config::default_db_pool_max_connections")]
-    pub db_pool_max_connections: u32,
-    pub db_url: String,
+    #[serde(default = "Config::default_mongo_url")]
+    pub mongo_url: String,
+    #[serde(default = "Config::default_mongo_database")]
+    pub mongo_database: String,
+    #[serde(default = "Config::default_asl_required_selection_size")]
+    pub asl_required_selection_size: u8,
+    #[serde(default = "Config::default_asl_policy_version")]
+    pub asl_policy_version: u16,
+    #[serde(default = "Config::default_asl_algorithm_version")]
+    pub asl_algorithm_version: u16,
+    #[serde(default = "Config::default_argon2_memory_kib")]
+    pub argon2_memory_kib: u32,
+    #[serde(default = "Config::default_argon2_iterations")]
+    pub argon2_iterations: u32,
+    #[serde(default = "Config::default_argon2_parallelism")]
+    pub argon2_parallelism: u32,
 }
 
 impl Config {
@@ -89,12 +100,36 @@ impl Config {
         ]
     }
 
-    fn default_db_pool_min_connections() -> u32 {
-        0
+    fn default_mongo_url() -> String {
+        "mongodb://localhost:27017".to_string()
     }
 
-    fn default_db_pool_max_connections() -> u32 {
+    fn default_mongo_database() -> String {
+        "auth_accessibility".to_string()
+    }
+
+    fn default_asl_required_selection_size() -> u8 {
         5
+    }
+
+    fn default_asl_policy_version() -> u16 {
+        1
+    }
+
+    fn default_asl_algorithm_version() -> u16 {
+        1
+    }
+
+    fn default_argon2_memory_kib() -> u32 {
+        19 * 1024
+    }
+
+    fn default_argon2_iterations() -> u32 {
+        2
+    }
+
+    fn default_argon2_parallelism() -> u32 {
+        1
     }
 
     fn string_to_level_filter<'de, D>(deserializer: D) -> Result<log::LevelFilter, D::Error>
