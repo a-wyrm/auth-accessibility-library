@@ -1,6 +1,3 @@
-import * as React from 'react';
-
-
 class GraphicalPassword {
 
     imageSet: Array<string>;

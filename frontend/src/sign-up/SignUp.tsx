@@ -12,10 +12,8 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 
 
-import GraphicalPassword from '../graphical-pw/GraphicalPassword';
-
-
-// Initalize Graphical Password
+import GraphicalPassword from '../auth types/GraphicalPassword';
+import ASLPassword from '../auth types/ASLPassword';
 
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -61,6 +59,7 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignUp() {
+  
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
@@ -168,20 +167,6 @@ export default function SignUp() {
             sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
           >
             <FormControl>
-              <FormLabel htmlFor="name">Full name</FormLabel>
-              <TextField
-                autoComplete="name"
-                name="name"
-                required
-                fullWidth
-                id="name"
-                placeholder="Jon Snow"
-                error={nameError}
-                helperText={nameErrorMessage}
-                color={nameError ? 'error' : 'primary'}
-              />
-            </FormControl>
-            <FormControl>
               <FormLabel htmlFor="email">Email</FormLabel>
               <TextField
                 required
@@ -196,22 +181,10 @@ export default function SignUp() {
                 color={passwordError ? 'error' : 'primary'}
               />
             </FormControl>
-            <FormControl>
-              <FormLabel htmlFor="password">Password</FormLabel>
-              <TextField
-                required
-                fullWidth
-                name="password"
-                placeholder="••••••"
-                type="password"
-                id="password"
-                autoComplete="new-password"
-                variant="outlined"
-                error={passwordError}
-                helperText={passwordErrorMessage}
-                color={passwordError ? 'error' : 'primary'}
-              />
-            </FormControl>
+            <ASLPassword
+              passwordError={passwordError}
+              passwordErrorMessage={passwordErrorMessage}
+            />
             <Button
               type="submit"
               fullWidth
