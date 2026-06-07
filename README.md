@@ -18,7 +18,7 @@ This project includes:
 - Rust + Actix Web
 - MongoDB
 - React + TypeScript (Create React App)
-- Docker Compose
+- Docker
 
 ## Run With Docker
 
