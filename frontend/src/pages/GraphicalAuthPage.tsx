@@ -299,7 +299,6 @@ export default function GraphicalAuthPage() {
             </Stack>
           )}
 
-          {/* Feedback Toast System */}
           {message && (
             <Alert 
               severity={isSuccess ? 'success' : 'error'} 

@@ -21,6 +21,29 @@ pub struct AslRepository {
     lexicon: Collection<AslLexiconDocument>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AslCredentialDocument {
+    #[serde(rename = "_id")]
+    user_id: String,
+    algorithm_version: u16,
+    policy_version: u16,
+    verifier_phc: String,
+    created_at: DateTime,
+    updated_at: DateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AslLexiconDocument {
+    #[serde(rename = "_id")]
+    id: AslItemId,
+    locale: String,
+    gesture_label: String,
+    translation_label: String,
+    active: bool,
+    sort_order: i32,
+}
+
+
 impl AslRepository {
     pub fn new(database: &Database) -> Self {
         Self {
@@ -109,28 +132,6 @@ impl AslRepository {
         let result = self.lexicon.insert_many(documents, None).await?;
         Ok(result.inserted_ids.len())
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct AslCredentialDocument {
-    #[serde(rename = "_id")]
-    user_id: String,
-    algorithm_version: u16,
-    policy_version: u16,
-    verifier_phc: String,
-    created_at: DateTime,
-    updated_at: DateTime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct AslLexiconDocument {
-    #[serde(rename = "_id")]
-    id: AslItemId,
-    locale: String,
-    gesture_label: String,
-    translation_label: String,
-    active: bool,
-    sort_order: i32,
 }
 
 impl From<AslCredentialDocument> for AslCredentialRecord {

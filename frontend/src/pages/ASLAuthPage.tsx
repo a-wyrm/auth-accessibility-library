@@ -183,7 +183,7 @@ export default function ASLAuthPage() {
           <Container maxWidth="lg">
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Box>
-                <h1 style={{ margin: '0.5rem 0' }}>🤟 ASL Authentication</h1>
+                <h1 style={{ margin: '0.5rem 0' }}>ASL Authentication</h1>
               </Box>
               <Button
                 variant="outlined"

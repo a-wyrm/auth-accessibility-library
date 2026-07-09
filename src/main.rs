@@ -18,6 +18,9 @@ use reactix::{
     },
     config::{init_command, init_config},
     logging::init_logger,
+    auth::graphical::{
+        GraphicalCredentialRepository
+    }
 };
 // Request/response payload (de)serialization.
 use serde::{Deserialize, Serialize};
@@ -57,6 +60,7 @@ struct AslStartResponse {
     items: Vec<AslLexiconResponseItem>,
 }
 
+
 // Generic operation response for failure/success messages.
 #[derive(Debug, Serialize)]
 struct AslOperationResponse {
@@ -68,6 +72,61 @@ struct AslOperationResponse {
 #[derive(Debug, Serialize)]
 struct AslVerifyResponse {
     authenticated: bool,
+}
+
+#[derive(Serialize)]
+pub struct GraphicalStartResponse {
+    pub items: Vec<GraphicalLexiconResponseItem>,
+}
+
+// This represents the individual items inside the response array
+#[derive(Serialize)]
+pub struct GraphicalLexiconResponseItem {
+    pub id: String,          // Or Bson ObjectId / u64 depending on your DB setup
+    pub picture_hash: String,
+    pub animal_hash: String,
+}
+
+#[derive(Deserialize)]
+pub struct GraphicalStartRequest {
+    pub user_id: String,
+    pub locale: Option<String>,
+}
+
+
+/// FOR graphical passwords
+#[actix_web::post("/api/auth/graphical/enroll/start")]
+async fn graphical_pw_enroll_start(
+    db: web::Data<Database>,
+    payload: web::Json<GraphicalStartRequest>,
+) -> HttpResponse {
+    let repository = GraphicalCredentialRepository::new(db.get_ref());
+    
+    let locale = payload
+        .locale
+        .clone()
+        .unwrap_or_else(|| "en-US".to_string());
+
+    // Call the new lexicon fetching function instead of upsert
+    match repository.get_enrollment_lexicon(&locale).await {
+        Ok(items) => {
+            let aligned_items: Vec<GraphicalLexiconResponseItem> = items
+                .into_iter()
+                .map(|item| GraphicalLexiconResponseItem {
+                    id: item.id,
+                    picture_hash: item.picture_hash,
+                    animal_hash: item.animal_hash,
+                })
+                .collect();
+
+            let response = GraphicalStartResponse { items: aligned_items };
+            HttpResponse::Ok().json(response)
+        }
+        Err(err) => {
+            log::error!("Failed to generate enrollment lexicon: {:?}", err);
+            HttpResponse::InternalServerError().body("Internal server error")
+        }
+    }
 }
 
 /// Returns ASL lexicon for enrollment with translation labels visible.
