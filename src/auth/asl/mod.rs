@@ -10,7 +10,6 @@ pub use error::PolicyError;
 pub use policy::AslPolicy;
 pub use repository::{AslRepository, RepositoryError};
 pub use types::{
-	AslCredentialRecord, AslItemId, AslLexiconItem, EnrollmentSelection,
-	LoginSelection,
+    AslCredentialRecord, AslItemId, AslLexiconItem, EnrollmentSelection, LoginSelection,
 };
 pub use verifier::{AslVerifier, AslVerifierConfig, VerifierError};

@@ -1,5 +1,5 @@
-import { useState, ChangeEvent } from 'react';
-import GraphicalPassword, { ANIMAL_POOL } from '../auth components/GraphicalPW';
+import { useEffect, useState, ChangeEvent } from 'react';
+import GraphicalPassword, { GraphicalAnimalOption, ANIMAL_POOL } from '../auth components/GraphicalPW';
 
 // Material UI Imports
 import Box from '@mui/material/Box';
@@ -54,6 +54,11 @@ export default function GraphicalAuthPage() {
   const [userId, setUserId] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [verificationGridFaces, setVerificationGridFaces] = useState<string[]>([]);
+  const [verificationGridMessage, setVerificationGridMessage] = useState<string>('');
+  const [verificationAnimalArray, setVerificationAnimalArray] = useState<{id: string; url: string; name: string;}[]>([]);
+  const [signupAnimalOptions, setSignupAnimalOptions] = useState<GraphicalAnimalOption[]>([]);
+  const [verificationAnimalOptions, setVerificationAnimalOptions] = useState<GraphicalAnimalOption[]>([]);
 
   // Signup State
   const [lovedOneImg, setLovedOneImg] = useState<string>('');
@@ -63,26 +68,103 @@ export default function GraphicalAuthPage() {
   const [verificationFace, setVerificationFace] = useState<string>('');
   const [verificationAnimal, setVerificationAnimal] = useState<string>('');
 
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setLovedOneImg(URL.createObjectURL(file));
+
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+            return;
+          }
+
+          reject(new Error('Unable to read uploaded image.'));
+        };
+        reader.onerror = () => reject(new Error('Unable to read uploaded image.'));
+        reader.readAsDataURL(file);
+      });
+
+      setLovedOneImg(dataUrl);
     }
   };
 
-  const handleSignup = () => {
-    const result = GraphicalPassword.registerUser({
+  const loadVerificationGrid = async (targetUserId: string) => {
+    const grid = await GraphicalPassword.getVerificationGridFaces(targetUserId);
+    setVerificationGridFaces(grid.success ? grid.faceChallenges : []);
+    setVerificationAnimalOptions(grid.success ? grid.animalOptions : []);
+    setVerificationAnimalArray(grid.success ? grid.animalArray : []);
+    setVerificationGridMessage(grid.message);
+  };
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (mode === 'signup') {
+      GraphicalPassword.getEnrollmentGrid(userId)
+        .then((grid) => {
+          if (isActive) {
+            setSignupAnimalOptions(grid.success ? grid.animalOptions : []);
+          }
+        })
+        .catch(() => {
+          if (isActive) {
+            setSignupAnimalOptions([]);
+          }
+        });
+
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (mode !== 'login') {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const trimmedId = userId.trim();
+    if (!trimmedId) {
+      setVerificationGridFaces([]);
+      setVerificationAnimalArray([]);
+      setVerificationGridMessage('');
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const timer = window.setTimeout(() => {
+      loadVerificationGrid(trimmedId).catch(() => {
+        if (isActive) {
+          setVerificationGridFaces([]);
+          setVerificationAnimalOptions([]);
+          setVerificationAnimalArray([]);
+        }
+      });
+    }, 350);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timer);
+    };
+  }, [mode, userId]);
+
+  const handleSignup = async () => {
+    const result = await GraphicalPassword.registerUser({
       id: userId,
       lovedOneImg,
       animalId: selectedAnimalId,
+      animalArray: ANIMAL_POOL
     });
 
     setIsSuccess(result.success);
     setMessage(result.message);
   };
 
-  const handleLogin = () => {
-    const result = GraphicalPassword.verifyPassword(userId, verificationFace, verificationAnimal);
+  const handleLogin = async () => {
+    const result = await GraphicalPassword.verifyPassword(userId, verificationFace, verificationAnimal);
 
     setIsSuccess(result.success);
     setMessage(result.message);
@@ -94,11 +176,19 @@ export default function GraphicalAuthPage() {
     setSelectedAnimalId('');
     setVerificationFace('');
     setVerificationAnimal('');
+    setVerificationAnimalArray([]);
+    setVerificationAnimalOptions([]);
+    setSignupAnimalOptions([]);
     setMessage('');
   };
 
-  // Pull challenge grid assets dynamically from the business logic layer
-  const verificationGridFaces = GraphicalPassword.getVerificationGridFaces(userId);
+  const signupAnimals = signupAnimalOptions;
+  const loginAnimals = verificationAnimalArray.length
+    ? verificationAnimalArray
+        .map((animalId) => {const id = typeof animalId === "string" ? animalId : animalId.id;
+          return verificationAnimalOptions.find((opt) => opt.id === id);})
+        .filter((animal): animal is GraphicalAnimalOption => Boolean(animal))
+    : verificationAnimalOptions;
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
@@ -123,7 +213,7 @@ export default function GraphicalAuthPage() {
           </Button>
           <Button
             fullWidth
-            onClick={() => { setMode('login'); setMessage(''); }}
+            onClick={() => { setMode('login'); setMessage(''); setIsSuccess(false); }}
             sx={{
               py: 1.5,
               textTransform: 'none',
@@ -213,7 +303,7 @@ export default function GraphicalAuthPage() {
                 </Typography>
 
                 <Grid container spacing={2}>
-                  {ANIMAL_POOL.map((animal) => {
+                  {signupAnimals.map((animal) => {
                     const isSelected = selectedAnimalId === animal.id;
                     return (
                       <Grid size={4} key={animal.id}>
@@ -247,8 +337,14 @@ export default function GraphicalAuthPage() {
                   1. Which is your uploaded identity image?
                 </Typography>
                 <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 2 }}>
-                  Locate and pass the primary graphic puzzle checkpoint.
+                    The images are loaded from the backend for the user identifier you entered.
                 </Typography>
+
+                  {verificationGridMessage && (
+                    <Alert severity={verificationGridFaces.length ? 'info' : 'warning'} sx={{ mb: 2, borderRadius: '12px' }}>
+                      {verificationGridMessage}
+                    </Alert>
+                  )}
 
                 <Grid container spacing={2}>
                   {verificationGridFaces.map((faceUrl, idx) => {
@@ -265,6 +361,11 @@ export default function GraphicalAuthPage() {
                     );
                   })}
                 </Grid>
+                {!verificationGridFaces.length && !verificationGridMessage && (
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
+                    Enter a user ID to load the login challenge images.
+                  </Typography>
+                )}
               </Box>
 
               {/* Challenge Grid 2 */}
@@ -277,8 +378,9 @@ export default function GraphicalAuthPage() {
                 </Typography>
 
                 <Grid container spacing={2}>
-                  {ANIMAL_POOL.map((animal) => {
+                  {loginAnimals.map((animal) => {
                     const isSelected = verificationAnimal === animal.id;
+
                     return (
                       <Grid size={4} key={animal.id}>
                         <ButtonBase onClick={() => setVerificationAnimal(animal.id)} sx={imageSelectorStyles(isSelected)}>
@@ -291,6 +393,8 @@ export default function GraphicalAuthPage() {
                     );
                   })}
                 </Grid>
+
+    
               </Box>
 
               <Button fullWidth color="success" variant="contained" onClick={handleLogin} sx={actionButtonStyles}>

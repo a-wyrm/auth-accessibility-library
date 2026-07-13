@@ -64,6 +64,10 @@ In Docker Compose, backend Mongo URL is set to `mongodb://mongodb:27017` for con
 - `POST /api/auth/asl/enroll/finish`
 - `POST /api/auth/asl/login/start`
 - `POST /api/auth/asl/login/verify`
+- `POST /api/auth/graphical/enroll/start`
+- `POST /api/auth/graphical/enroll/finish`
+- `POST /api/auth/graphical/login/start`
+- `POST /api/auth/graphical/login/verify`
 
 ## Frontend Notes
 

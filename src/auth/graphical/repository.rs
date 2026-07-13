@@ -5,7 +5,6 @@ use mongodb::{
 };
 use serde::{Deserialize, Serialize};
 
-
 use super::error::GraphicalPasswordError;
 use super::types::{GraphicalCredentialRecord, GraphicalLexiconResponseItem};
 
@@ -16,7 +15,6 @@ pub enum RepositoryError {
     #[error("mongodb operation failed: {0}")]
     Mongo(#[from] mongodb::error::Error),
 }
-
 
 #[derive(Debug, Clone)]
 pub struct GraphicalCredentialRepository {
@@ -35,6 +33,7 @@ struct GraphicalCredentialDocument {
     verifier_phc: String,
     created_at: DateTime,
     updated_at: DateTime,
+    animal_array: Vec<String>,
 }
 
 impl GraphicalCredentialRepository {
@@ -45,18 +44,16 @@ impl GraphicalCredentialRepository {
         }
     }
 
+    /// TODO: Change this hash
     pub async fn get_enrollment_lexicon(
         &self,
         _locale: &str,
     ) -> Result<Vec<GraphicalLexiconResponseItem>, GraphicalPasswordError> {
-        
-        Ok(vec![
-            GraphicalLexiconResponseItem {
-                id: "1".to_string(),
-                picture_hash: "hash_abc123".to_string(),
-                animal_hash: "hash_dog456".to_string(),
-            }
-        ])
+        Ok(vec![GraphicalLexiconResponseItem {
+            id: "1".to_string(),
+            picture_hash: "hash_abc123".to_string(),
+            animal_hash: "hash_dog456".to_string(),
+        }])
     }
 
     /// Store or update a user's graphical password credentials
@@ -84,6 +81,7 @@ impl GraphicalCredentialRepository {
                         "loved_one_image_hash": &record.loved_one_image_hash,
                         "secret_animal_id": &record.secret_animal_id,
                         "verifier_phc": &record.verifier_phc,
+                        "animal_array": &record.animal_array,
                         "updated_at": &now,
                     },
                     "$setOnInsert": {
@@ -119,10 +117,7 @@ impl GraphicalCredentialRepository {
     }
 
     /// Delete a user's graphical password credentials
-    pub async fn delete_credential(
-        &self,
-        user_id: &str,
-    ) -> Result<bool, GraphicalPasswordError> {
+    pub async fn delete_credential(&self, user_id: &str) -> Result<bool, GraphicalPasswordError> {
         let trimmed_id = user_id.trim();
 
         let result = self
@@ -154,10 +149,10 @@ impl From<GraphicalCredentialDocument> for GraphicalCredentialRecord {
             loved_one_image_hash: doc.loved_one_image_hash,
             secret_animal_id: doc.secret_animal_id,
             verifier_phc: doc.verifier_phc,
+            animal_array: doc.animal_array
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -172,6 +167,7 @@ mod tests {
             loved_one_image_hash: "hash123".to_string(),
             secret_animal_id: "a1".to_string(),
             verifier_phc: "phc_string".to_string(),
+            animal_array: vec!["a".to_string(), "b".into(), "c".into()],
             created_at: DateTime::now(),
             updated_at: DateTime::now(),
         };

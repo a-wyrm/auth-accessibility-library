@@ -16,11 +16,13 @@ use reactix::{
         AslLexiconItem, AslPolicy, AslRepository, AslVerifier, AslVerifierConfig,
         EnrollmentSelection, LoginSelection,
     },
+    auth::graphical::{
+        graphical_animal_pool, AnimalOption, GraphicalChallengeGrid, GraphicalCredentialRepository,
+        GraphicalEnrollmentData, GraphicalLoginInput, GraphicalPolicy, GraphicalVerificationResult,
+        GraphicalVerifier, GraphicalVerifierConfig, GRAPHICAL_DISTRACTOR_FACES,
+    },
     config::{init_command, init_config},
     logging::init_logger,
-    auth::graphical::{
-        GraphicalCredentialRepository
-    }
 };
 // Request/response payload (de)serialization.
 use serde::{Deserialize, Serialize};
@@ -60,7 +62,6 @@ struct AslStartResponse {
     items: Vec<AslLexiconResponseItem>,
 }
 
-
 // Generic operation response for failure/success messages.
 #[derive(Debug, Serialize)]
 struct AslOperationResponse {
@@ -74,58 +75,167 @@ struct AslVerifyResponse {
     authenticated: bool,
 }
 
-#[derive(Serialize)]
-pub struct GraphicalStartResponse {
-    pub items: Vec<GraphicalLexiconResponseItem>,
-}
-
-// This represents the individual items inside the response array
-#[derive(Serialize)]
-pub struct GraphicalLexiconResponseItem {
-    pub id: String,          // Or Bson ObjectId / u64 depending on your DB setup
-    pub picture_hash: String,
-    pub animal_hash: String,
-}
-
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GraphicalStartRequest {
     pub user_id: String,
     pub locale: Option<String>,
 }
 
+fn graphical_animal_options() -> Vec<AnimalOption> {
+    graphical_animal_pool()
+}
 
-/// FOR graphical passwords
+fn graphical_challenge_grid(
+    face_challenges: Vec<String>,
+    animal_array: Vec<String>,
+) -> GraphicalChallengeGrid {
+    GraphicalChallengeGrid {
+        face_challenges,
+        animal_options: graphical_animal_options(),
+        animal_array,
+    }
+}
+
+/// Returns graphical auth data for enrollment.
 #[actix_web::post("/api/auth/graphical/enroll/start")]
 async fn graphical_pw_enroll_start(
+    _db: web::Data<Database>,
+    _payload: web::Json<GraphicalStartRequest>,
+) -> HttpResponse {
+    HttpResponse::Ok().json(graphical_challenge_grid(Vec::new(), Vec::new()))
+}
+
+#[actix_web::post("/api/auth/graphical/enroll/finish")]
+async fn graphical_pw_enroll_finish(
+    config: web::Data<reactix::config::Config>,
+    db: web::Data<Database>,
+    payload: web::Json<GraphicalEnrollmentData>,
+) -> HttpResponse {
+    let policy = GraphicalPolicy::default();
+    if let Err(err) = policy.validate_enrollment(&payload) {
+        return HttpResponse::BadRequest().json(GraphicalVerificationResult {
+            success: false,
+            message: format!("invalid enrollment: {err}"),
+        });
+    }
+
+    let verifier = GraphicalVerifier::new(GraphicalVerifierConfig {
+        algorithm_version: 1,
+        policy_version: 1,
+        memory_kib: config.argon2_memory_kib,
+        iterations: config.argon2_iterations,
+        parallelism: config.argon2_parallelism,
+    });
+
+    let record = match verifier.derive_verifier(&payload) {
+        Ok(record) => record,
+        Err(err) => {
+            return HttpResponse::InternalServerError().json(GraphicalVerificationResult {
+                success: false,
+                message: format!("could not derive graphical verifier: {err}"),
+            })
+        }
+    };
+
+    let repository = GraphicalCredentialRepository::new(db.get_ref());
+    match repository
+        .upsert_credential(payload.user_id.as_str(), &record)
+        .await
+    {
+        Ok(()) => HttpResponse::Ok().json(GraphicalVerificationResult {
+            success: true,
+            message: "graphical enrollment stored".to_string(),
+        }),
+        Err(err) => HttpResponse::InternalServerError().json(GraphicalVerificationResult {
+            success: false,
+            message: format!("failed to store graphical enrollment: {err}"),
+        }),
+    }
+}
+
+#[actix_web::post("/api/auth/graphical/login/start")]
+async fn graphical_pw_login_start(
     db: web::Data<Database>,
     payload: web::Json<GraphicalStartRequest>,
 ) -> HttpResponse {
     let repository = GraphicalCredentialRepository::new(db.get_ref());
-    
-    let locale = payload
-        .locale
-        .clone()
-        .unwrap_or_else(|| "en-US".to_string());
-
-    // Call the new lexicon fetching function instead of upsert
-    match repository.get_enrollment_lexicon(&locale).await {
-        Ok(items) => {
-            let aligned_items: Vec<GraphicalLexiconResponseItem> = items
-                .into_iter()
-                .map(|item| GraphicalLexiconResponseItem {
-                    id: item.id,
-                    picture_hash: item.picture_hash,
-                    animal_hash: item.animal_hash,
-                })
-                .collect();
-
-            let response = GraphicalStartResponse { items: aligned_items };
-            HttpResponse::Ok().json(response)
+    let user = match repository.get_credential(payload.user_id.as_str()).await {
+        Ok(Some(record)) => record,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(GraphicalVerificationResult {
+                success: false,
+                message: "User ID not found.".to_string(),
+            })
         }
         Err(err) => {
-            log::error!("Failed to generate enrollment lexicon: {:?}", err);
-            HttpResponse::InternalServerError().body("Internal server error")
+            return HttpResponse::InternalServerError().json(GraphicalVerificationResult {
+                success: false,
+                message: format!("failed to load graphical credential: {err}"),
+            })
         }
+    };
+
+    let mut face_challenges: Vec<String> = GRAPHICAL_DISTRACTOR_FACES
+        .iter()
+        .map(|face| (*face).to_string())
+        .collect();
+    face_challenges.push(user.loved_one_image_hash);
+
+    HttpResponse::Ok().json(graphical_challenge_grid(face_challenges, user.animal_array))
+}
+
+#[actix_web::post("/api/auth/graphical/login/verify")]
+async fn graphical_pw_login_verify(
+    db: web::Data<Database>,
+    payload: web::Json<GraphicalLoginInput>,
+) -> HttpResponse {
+    let policy = GraphicalPolicy::default();
+    if let Err(err) = policy.validate_login(&payload) {
+        return HttpResponse::BadRequest().json(GraphicalVerificationResult {
+            success: false,
+            message: format!("invalid login input: {err}"),
+        });
+    }
+
+    let repository = GraphicalCredentialRepository::new(db.get_ref());
+    let stored = match repository.get_credential(payload.user_id.as_str()).await {
+        Ok(Some(record)) => record,
+        Ok(None) => {
+            return HttpResponse::Ok().json(GraphicalVerificationResult {
+                success: false,
+                message: "User ID not found.".to_string(),
+            })
+        }
+        Err(err) => {
+            return HttpResponse::InternalServerError().json(GraphicalVerificationResult {
+                success: false,
+                message: format!("failed to load graphical credential: {err}"),
+            })
+        }
+    };
+
+    let verifier = GraphicalVerifier::new(GraphicalVerifierConfig {
+        algorithm_version: stored.algorithm_version,
+        policy_version: stored.policy_version,
+        memory_kib: 19 * 1024,
+        iterations: 2,
+        parallelism: 1,
+    });
+
+    match verifier.verify(&payload, &stored) {
+        Ok(true) => HttpResponse::Ok().json(GraphicalVerificationResult {
+            success: true,
+            message: "Authenticated successfully! Welcome back.".to_string(),
+        }),
+        Ok(false) => HttpResponse::Ok().json(GraphicalVerificationResult {
+            success: false,
+            message: "Authentication failed. Incorrect selections.".to_string(),
+        }),
+        Err(err) => HttpResponse::InternalServerError().json(GraphicalVerificationResult {
+            success: false,
+            message: format!("verification failed: {err}"),
+        }),
     }
 }
 
@@ -423,6 +533,10 @@ async fn main() -> anyhow::Result<()> {
             .service(asl_enroll_finish)
             .service(asl_login_start)
             .service(asl_login_verify)
+            .service(graphical_pw_enroll_start)
+            .service(graphical_pw_enroll_finish)
+            .service(graphical_pw_login_start)
+            .service(graphical_pw_login_verify)
             .service(actix_files::Files::new("/", "frontend/build").index_file("index.html"))
     })
     .bind((config.host, config.port))?

@@ -1,7 +1,10 @@
+;
+
 export interface UserCredentials {
   id: string;
   lovedOneImg: string;
   animalId: string;
+  animalArray: {id: string; url: string; name: string;}[];
 }
 
 export interface AuthResult {
@@ -9,14 +12,19 @@ export interface AuthResult {
   message: string;
 }
 
-export const ANIMAL_POOL = [
-  { id: 'a1', url: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=150&auto=format&fit=crop&q=60', name: 'Lion' },
-  { id: 'a2', url: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=150&auto=format&fit=crop&q=60', name: 'Cat' },
-  { id: 'a3', url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=150&auto=format&fit=crop&q=60', name: 'Dog' },
-  { id: 'a4', url: 'https://images.unsplash.com/photo-15076664km-c511a5699745?w=150&auto=format&fit=crop&q=60', name: 'Panda' },
-  { id: 'a5', url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=60', name: 'Koala' },
-  { id: 'a6', url: 'https://images.unsplash.com/photo-1484557985045-edf25e08da73?w=150&auto=format&fit=crop&q=60', name: 'Owl' },
-];
+export interface GraphicalAnimalOption {
+  id: string;
+  url: string;
+  name: string;
+}
+
+export interface GraphicalChallengeGrid {
+  success: boolean;
+  message: string;
+  faceChallenges: string[];
+  animalOptions: GraphicalAnimalOption[];
+  animalArray: {id: string; url: string; name: string;}[];
+}
 
 export const DISTRACTOR_FACES = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60',
@@ -26,14 +34,124 @@ export const DISTRACTOR_FACES = [
   'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=60',
 ];
 
+
+export const ANIMAL_POOL: Array<{ id: string; url: string; name: string }> = [];
+
+export async function fillAnimalPool() {
+  // 2x dog-database-free-api
+  for (let i = 0; i < 2; i++) {
+    const res = await fetch("https://dog.ceo/api/breeds/image/random");
+    if (!res.ok) throw new Error(`Dog API call failed (attempt ${i + 1})`);
+
+    const data = await res.json();
+    console.log(data);
+    const url =
+      data?.message;
+
+    if (!url) throw new Error("Could not find dog image url in response");
+    ANIMAL_POOL.push({ id: `a${i + 1}`, url, name: "Dog" });
+  }
+
+  // 2x randomfox
+  for (let i = 0; i < 2; i++) {
+    const res = await fetch("https://randomfox.ca/floof/");
+    if (!res.ok) throw new Error(`Fox API call failed (attempt ${i + 1})`);
+
+    const data = await res.json();
+    const url = data?.image;
+
+    if (!url) throw new Error("Could not find fox image url in response");
+    ANIMAL_POOL.push({ id: `a${i + 3}`, url, name: "Fox" });
+  }
+
+  // 2x random cat
+  for (let i = 0; i < 2; i++) {
+    const res = await fetch("https://aleatori.cat/random.json");
+    if (!res.ok) throw new Error(`Fox API call failed (attempt ${i + 1})`);
+
+    const data = await res.json();
+    const url = data?.jpeg;
+
+    if (!url) throw new Error("Could not find cat image url in response");
+    ANIMAL_POOL.push({ id: `a${i + 5}`, url, name: "Cat" });
+  }
+
+  return ANIMAL_POOL;
+}
+
+fillAnimalPool();
+
+
+type GraphicalEnrollmentPayload = {
+  userId: string;
+  lovedOneImgHash?: string;
+  imageData?: string;
+  animalId: string;
+  animalArray: {id: string; url: string; name: string;}[];
+};
+
+type GraphicalLoginPayload = {
+  userId: string;
+  selectedFace: string;
+  selectedAnimalId: string;
+};
+
+const API_BASE = '/api/auth/graphical';
+
+async function postJson<TResponse>(url: string, body: unknown): Promise<TResponse> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  return (await response.json()) as TResponse;
+}
+
 class GraphicalPassword {
-  // Simulating a backend database/local registry lookup
-  private static registeredUsers: Map<string, UserCredentials> = new Map();
+  /**
+   * Loads the signup challenge data
+   */
+  public static async getEnrollmentGrid(userId: string): Promise<GraphicalChallengeGrid> {
+    const trimmedId = userId.trim();
+
+    const response = await fetch(`${API_BASE}/enroll/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: trimmedId }),
+    });
+
+    if (!response.ok) {
+      const errorMessage = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null;
+
+      return {
+        success: false,
+        message: errorMessage?.message ?? 'Unable to load signup animals from the backend.',
+        faceChallenges: [],
+        animalOptions: [],
+        animalArray: [{ id: "1", url: "https://example.com", name: "Example" }],
+      };
+    }
+
+    const grid = (await response.json()) as GraphicalChallengeGrid;
+
+    return {
+      ...grid,
+      success: true,
+      message: '',
+    };
+  }
 
   /**
-   * Registers a user's graphical password configuration.
+   * Registers a user's graphical password configuration on the backend.
    */
-  public static registerUser(credentials: UserCredentials): AuthResult {
+  public static async registerUser(credentials: UserCredentials): Promise<AuthResult> {
     const trimmedId = credentials.id.trim();
 
     if (!trimmedId || !credentials.lovedOneImg || !credentials.animalId) {
@@ -43,64 +161,91 @@ class GraphicalPassword {
       };
     }
 
-    this.registeredUsers.set(trimmedId, {
-      ...credentials,
-      id: trimmedId,
+    const payload: GraphicalEnrollmentPayload = {
+      userId: trimmedId,
+      lovedOneImgHash: credentials.lovedOneImg,
+      imageData: credentials.lovedOneImg,
+      animalId: credentials.animalId,
+      animalArray: credentials.animalArray
+    };
+
+    const result = await postJson<AuthResult>(`${API_BASE}/enroll/finish`, payload);
+
+    return result;
+  }
+
+  /**
+   * Loads the login challenge for a specific user identifier.
+   */
+  public static async getVerificationGridFaces(userId: string): Promise<GraphicalChallengeGrid> {
+    const trimmedId = userId.trim();
+
+    if (!trimmedId) {
+      return {
+        success: false,
+        message: 'Please enter a user ID to load the login challenge.',
+        faceChallenges: [],
+        animalOptions: [],
+        animalArray: [],
+      };
+    }
+
+    const response = await fetch(`${API_BASE}/login/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: trimmedId }),
     });
 
+    if (!response.ok) {
+      const errorMessage = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null;
+
+      return {
+        success: false,
+        message: errorMessage?.message ?? 'No graphical profile found for that user ID. Sign up first.',
+        faceChallenges: [],
+        animalOptions: [],
+        animalArray: [],
+      };
+    }
+
+    const grid = (await response.json()) as GraphicalChallengeGrid;
+
     return {
+      ...grid,
       success: true,
-      message: 'Signup successful! Switch to Login mode to verify.',
+      message: '',
     };
   }
 
   /**
-   * Retrieves a registered user's credentials.
+   * Verifies the selected face and animal against the backend-stored credential.
    */
-  public static getRegisteredUser(userId: string): UserCredentials | undefined {
-    return this.registeredUsers.get(userId.trim());
-  }
-
-  /**
-   * Dynamically constructs the challenge face lineup for a specific user ID.
-   */
-  public static getVerificationGridFaces(userId: string): string[] {
-    const user = this.getRegisteredUser(userId);
-    return user ? [...DISTRACTOR_FACES, user.lovedOneImg] : DISTRACTOR_FACES;
-  }
-
-  /**
-   * Validates if the user's input matches their registered graphical credentials.
-   */
-  public static verifyPassword(
+  public static async verifyPassword(
     userId: string,
     inputFace: string | undefined,
     inputAnimal: string | undefined
-  ): AuthResult {
+  ): Promise<AuthResult> {
     const trimmedId = userId.trim();
 
     if (!trimmedId) {
       return { success: false, message: 'Please enter your user ID.' };
     }
 
-    const user = this.getRegisteredUser(trimmedId);
-
-    if (!user) {
-      return { success: false, message: 'User ID not found.' };
-    }
-
     if (!inputFace || !inputAnimal) {
       return { success: false, message: 'Please select both correct images.' };
     }
 
-    const isFaceCorrect = inputFace === user.lovedOneImg;
-    const isAnimalCorrect = inputAnimal === user.animalId;
+    const payload: GraphicalLoginPayload = {
+      userId: trimmedId,
+      selectedFace: inputFace,
+      selectedAnimalId: inputAnimal,
+    };
 
-    if (isFaceCorrect && isAnimalCorrect) {
-      return { success: true, message: 'Authenticated successfully! Welcome back.' };
-    }
-
-    return { success: false, message: 'Authentication failed. Incorrect selections.' };
+    return postJson<AuthResult>(`${API_BASE}/login/verify`, payload);
   }
 }
 

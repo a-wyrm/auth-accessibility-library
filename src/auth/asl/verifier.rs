@@ -179,6 +179,9 @@ mod tests {
 
         let result = verifier.verify(&login, &record);
 
-        assert!(matches!(result, Err(VerifierError::InvalidStoredVerifier(_))));
+        assert!(matches!(
+            result,
+            Err(VerifierError::InvalidStoredVerifier(_))
+        ));
     }
 }

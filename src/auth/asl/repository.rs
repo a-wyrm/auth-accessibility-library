@@ -43,7 +43,6 @@ struct AslLexiconDocument {
     sort_order: i32,
 }
 
-
 impl AslRepository {
     pub fn new(database: &Database) -> Self {
         Self {
@@ -83,7 +82,10 @@ impl AslRepository {
         &self,
         user_id: &str,
     ) -> Result<Option<AslCredentialRecord>, RepositoryError> {
-        let stored = self.credentials.find_one(doc! { "_id": user_id }, None).await?;
+        let stored = self
+            .credentials
+            .find_one(doc! { "_id": user_id }, None)
+            .await?;
         Ok(stored.map(AslCredentialRecord::from))
     }
 
@@ -126,8 +128,11 @@ impl AslRepository {
             return Ok(0);
         }
 
-        let documents: Vec<AslLexiconDocument> =
-            items.iter().cloned().map(AslLexiconDocument::from).collect();
+        let documents: Vec<AslLexiconDocument> = items
+            .iter()
+            .cloned()
+            .map(AslLexiconDocument::from)
+            .collect();
 
         let result = self.lexicon.insert_many(documents, None).await?;
         Ok(result.inserted_ids.len())
